@@ -8,8 +8,8 @@ Write-Host ""
 $ProjectName = Read-Host "Enter new project name"
 
 if ([string]::IsNullOrWhiteSpace($ProjectName)) {
-    Write-Host "Project name cannot be empty." -ForegroundColor Red
-    exit 1
+  Write-Host "Project name cannot be empty." -ForegroundColor Red
+  exit 1
 }
 
 # 2. Ask for parent folder, default = current folder
@@ -17,27 +17,27 @@ $DefaultParent = (Get-Location).Path
 $ParentFolder = Read-Host "Enter parent folder path or press Enter to use current folder [$DefaultParent]"
 
 if ([string]::IsNullOrWhiteSpace($ParentFolder)) {
-    $ParentFolder = $DefaultParent
+  $ParentFolder = $DefaultParent
 }
 
 if (-not (Test-Path $ParentFolder)) {
-    Write-Host "Parent folder does not exist: $ParentFolder" -ForegroundColor Red
-    exit 1
+  Write-Host "Parent folder does not exist: $ParentFolder" -ForegroundColor Red
+  exit 1
 }
 
 $ProjectPath = Join-Path $ParentFolder $ProjectName
 
 if (Test-Path $ProjectPath) {
-    Write-Host "Folder already exists: $ProjectPath" -ForegroundColor Red
-    exit 1
+  Write-Host "Folder already exists: $ProjectPath" -ForegroundColor Red
+  exit 1
 }
 
 # 3. Pre-check required tools
 function Require-Command($name) {
-    if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
-        Write-Host "Missing required command: $name" -ForegroundColor Red
-        exit 1
-    }
+  if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
+    Write-Host "Missing required command: $name" -ForegroundColor Red
+    exit 1
+  }
 }
 
 Require-Command "node"
@@ -61,7 +61,8 @@ pnpm dlx shadcn@latest init -d --base radix
 doppler setup --project shadcn-env --config dev --no-interactive
 
 # 8. Export secrets to .env.local
-doppler secrets download --no-file --format env | Out-File -Encoding utf8 .env.local
+$envContent = doppler secrets download --no-file --format env
+$envContent | Set-Content -Encoding utf8NoBOM .env.local
 
 # 9. Overwrite components.json
 @'
@@ -77,8 +78,6 @@ doppler secrets download --no-file --format env | Out-File -Encoding utf8 .env.l
     "cssVariables": true,
     "prefix": ""
   },
-  "iconLibrary": "lucide",
-  "rtl": false,
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
@@ -86,8 +85,6 @@ doppler secrets download --no-file --format env | Out-File -Encoding utf8 .env.l
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "menuColor": "default",
-  "menuAccent": "subtle",
   "registries": {
     "@shadcn-studio": "https://shadcnstudio.com/r/{name}.json",
     "@ss-components": {
@@ -113,14 +110,14 @@ doppler secrets download --no-file --format env | Out-File -Encoding utf8 .env.l
     }
   }
 }
-'@ | Set-Content -Encoding utf8 components.json
+'@ | Set-Content -Encoding utf8NoBOM components.json
 
 # 10. Ensure .gitignore includes .env.local
 if (Test-Path ".gitignore") {
-    $gitignore = Get-Content ".gitignore" -Raw
-    if ($gitignore -notmatch "(?m)^\.env\.local$") {
-        Add-Content ".gitignore" "`n.env.local"
-    }
+  $gitignore = Get-Content ".gitignore" -Raw
+  if ($gitignore -notmatch "(?m)^\.env\.local$") {
+    Add-Content ".gitignore" "`n.env.local"
+  }
 }
 
 Write-Host ""
@@ -130,4 +127,5 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "1. cd `"$ProjectPath`""
 Write-Host "2. pnpm dev"
+Write-Host "3. Start coding"
 Write-Host ""
