@@ -60,12 +60,15 @@ pnpm dlx shadcn@latest init -d --base radix
 # 7. Setup Doppler
 doppler setup --project shadcn-env --config dev --no-interactive
 
+# Shared UTF-8 without BOM encoder for Windows PowerShell compatibility
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
 # 8. Export secrets to .env.local
 $envContent = doppler secrets download --no-file --format env
-$envContent | Set-Content -Encoding utf8NoBOM .env.local
+[System.IO.File]::WriteAllText((Join-Path $ProjectPath ".env.local"), $envContent, $utf8NoBom)
 
 # 9. Overwrite components.json
-@'
+$jsonContent = @'
 {
   "$schema": "https://ui.shadcn.com/schema.json",
   "style": "radix-nova",
@@ -110,7 +113,8 @@ $envContent | Set-Content -Encoding utf8NoBOM .env.local
     }
   }
 }
-'@ | Set-Content -Encoding utf8NoBOM components.json
+'@
+[System.IO.File]::WriteAllText((Join-Path $ProjectPath "components.json"), $jsonContent, $utf8NoBom)
 
 # 10. Ensure .gitignore includes .env.local
 if (Test-Path ".gitignore") {
