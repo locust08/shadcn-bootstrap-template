@@ -57,15 +57,45 @@ pnpm create next-app@latest . --ts --tailwind --eslint --app --src-dir --import-
 # 6. Init shadcn
 pnpm dlx shadcn@latest init -d --base radix
 
-# 7. Setup Doppler
-doppler setup --project shadcn-env --config dev --no-interactive
+# 7. Doppler setup
+$dopplerConfigured = $false
 
-# Shared UTF-8 without BOM encoder for Windows PowerShell compatibility
+try {
+  $null = doppler configure get 2>$null
+  if ($LASTEXITCODE -eq 0) {
+    $dopplerConfigured = $true
+  }
+} catch {
+  $dopplerConfigured = $false
+}
+
+if (-not $dopplerConfigured) {
+  Write-Host ""
+  Write-Host "Select your Doppler project and config..." -ForegroundColor Cyan
+  doppler setup
+}
+
+# Shared UTF-8 without BOM encoder
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 # 8. Export secrets to .env.local
-$envContent = doppler secrets download --no-file --format env
+$envContent = doppler secrets download --no-file --format env 2>$null
+if ($LASTEXITCODE -ne 0 -or -not $envContent) {
+  Write-Host ""
+  Write-Host "Failed to download Doppler secrets." -ForegroundColor Red
+  Write-Host "Make sure you are logged into Doppler, have access to the selected project/config, and try again." -ForegroundColor Red
+  exit 1
+}
+
 $envText = $envContent -join "`r`n"
+
+if ($envText -notmatch '(^|[\r\n])EMAIL=' -or $envText -notmatch '(^|[\r\n])LICENSE_KEY=') {
+  Write-Host ""
+  Write-Host "Missing EMAIL or LICENSE_KEY in Doppler secrets." -ForegroundColor Red
+  Write-Host "Add those secrets in the selected Doppler project/config and rerun the bootstrap." -ForegroundColor Red
+  exit 1
+}
+
 [System.IO.File]::WriteAllText((Join-Path $ProjectPath ".env.local"), $envText, $utf8NoBom)
 
 # 9. Overwrite components.json
