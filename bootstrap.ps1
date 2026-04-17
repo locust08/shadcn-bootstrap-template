@@ -65,7 +65,8 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 # 8. Export secrets to .env.local
 $envContent = doppler secrets download --no-file --format env
-[System.IO.File]::WriteAllText((Join-Path $ProjectPath ".env.local"), $envContent, $utf8NoBom)
+$envText = $envContent -join "`r`n"
+[System.IO.File]::WriteAllText((Join-Path $ProjectPath ".env.local"), $envText, $utf8NoBom)
 
 # 9. Overwrite components.json
 $jsonContent = @'
